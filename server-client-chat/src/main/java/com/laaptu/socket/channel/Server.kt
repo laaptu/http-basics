@@ -20,7 +20,8 @@ class Server(var portNumber: Int) : SocketRule {
     private val serverSocket = ServerSocket(portNumber)
     private var clientSocket: Socket? = null
     private var outputWriter: PrintWriter? = null
-    private var inputReader: BufferedReader? = null
+    private var inputReader: InputStream? = null
+    private val readBuffer: ByteArray = ByteArray(1024)
     private var messageListener: MessageListener? = null
 
     private val runningJob = Job()
@@ -46,19 +47,21 @@ class Server(var portNumber: Int) : SocketRule {
         }
     }
 
+
     private fun readFromSocket(connectedSocket: Socket) {
         clientSocket = connectedSocket
         clientIPAddress = connectedSocket.inetAddress.hostAddress
         launch(CommonPool, parent = runningJob) {
             try {
                 outputWriter = PrintWriter(BufferedWriter(OutputStreamWriter(connectedSocket.getOutputStream())), true)
-                inputReader = BufferedReader(InputStreamReader(connectedSocket.getInputStream()))
+                inputReader = connectedSocket.getInputStream()
 
                 while (isRunning) {
                     Timber.d("Server running at %s", System.currentTimeMillis().toString())
                     inputReader?.let {
-                        val inputMessage = it.readLine()
-                        if (!inputMessage.isNullOrEmpty())
+                        var bytes = it.read(readBuffer)
+                        val inputMessage = String(readBuffer, 0, bytes)
+                        if (!inputMessage.isEmpty())
                             broadCastIncomingMessage("( @ $clientIPAddress )  $inputMessage")
                     }
                 }

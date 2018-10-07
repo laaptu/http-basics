@@ -64,14 +64,25 @@ class CommunicationActivity : AppCompatActivity(), MessageListener {
         val bundle: Bundle = if (intent.extras == null) getBundle(true, "192.168.10.10", 8088) else intent.extras
         getValuesFromBundle(bundle)
         startSocketCommunication()
-        updateToolbar("${socket.getType()} : @ ${getDeviceIPAddress()}")
+        updateToolbar(communicationType)
         initViews()
 
     }
 
-    private fun updateToolbar(socketType: String) {
-        toolbar.title = socketType
-        val drawableId = if (socketType == SocketType.Server) R.drawable.ic_server else R.drawable.ic_client
+    private fun updateToolbar(communicationType: CommunicationType) {
+        var toolbarTitle = ""
+        var drawableId = 0
+        when (communicationType) {
+            CommunicationType.Server -> {
+                toolbarTitle = SocketType.Server
+                drawableId = R.drawable.ic_server
+            }
+            CommunicationType.Client -> {
+                toolbarTitle = SocketType.Client
+                drawableId = R.drawable.ic_client
+            }
+        }
+        toolbar.title = "$toolbarTitle : @ ${getDeviceIPAddress()}"
         toolbar.logo = ContextCompat.getDrawable(this, drawableId)
     }
 

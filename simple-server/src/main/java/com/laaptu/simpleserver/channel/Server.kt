@@ -50,21 +50,29 @@ class Server(var portNumber: Int) : SocketRule {
         sendInfo("Connected to the client at $clientIPAddress")
         launch(CommonPool, parent = runningJob) {
             var runForAWhile = true
+            var outputWriter: PrintWriter? = null
+            var inputReader: InputStream? = null
+            val readBuffer = ByteArray(1024)
             try {
-                val outputWriter = PrintWriter(BufferedWriter(OutputStreamWriter(clientSocket.getOutputStream())), true)
-                val inputReader = BufferedReader(InputStreamReader(clientSocket.getInputStream()))
+                outputWriter = PrintWriter(BufferedWriter(OutputStreamWriter(clientSocket.getOutputStream())), true)
+                inputReader = clientSocket.getInputStream()
                 while (runForAWhile) {
                     Timber.d("Server running at %s", System.currentTimeMillis().toString())
-                    val inputMessage = inputReader.use(BufferedReader::readText)
-                    if (!inputMessage.isEmpty()) {
-                        broadCastIncomingMessage("( @ $clientIPAddress ) says:\n $inputMessage")
-                        outputWriter.println(getResponseMessage(inputMessage))
-                        runForAWhile = false
+                    inputReader?.let {
+                        val bytes = it.read(readBuffer)
+                        val inputMessage = String(readBuffer, 0, bytes)
+                        if (!inputMessage.isEmpty()) {
+                            broadCastIncomingMessage("( @ $clientIPAddress )  $inputMessage")
+                            outputWriter.println(getResponseMessage(inputMessage))
+                            runForAWhile = false
+                        }
                     }
                 }
             } catch (exception: Exception) {
                 Timber.e("Error creating the input and output stream due to: %s", exception.message)
             } finally {
+                outputWriter?.close()
+                inputReader?.close()
                 clientSocket.close()
             }
         }
@@ -73,9 +81,8 @@ class Server(var portNumber: Int) : SocketRule {
     override fun sendMessage(message: String) {
     }
 
-    private fun getResponseMessage(incomingMessage: String) {
-        "You sent:\n $incomingMessage \nBUT Me Server can send you the current date only i.e.\n ${getCurrentDateTime()}"
-    }
+    private fun getResponseMessage(incomingMessage: String): String =
+            "You sent:\n $incomingMessage \nBUT Me Server can send you the current date only i.e.\n ${getCurrentDateTime()}"
 
 
     private fun getCurrentDateTime(): String = simpleDateFormat.format(Calendar.getInstance().time)

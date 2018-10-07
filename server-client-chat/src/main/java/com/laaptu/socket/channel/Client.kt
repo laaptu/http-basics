@@ -14,7 +14,8 @@ class Client(private val ipAddress: String, private val serverPortNumber: Int) :
 
     private var clientSocket: Socket? = null
     private var outputWriter: PrintWriter? = null
-    private var inputReader: BufferedReader? = null
+    private var inputReader: InputStream? = null
+    private val readBuffer: ByteArray = ByteArray(1024)
     private var messageListener: MessageListener? = null
     private val runningJob = Job()
     private var isRunning = true
@@ -25,12 +26,13 @@ class Client(private val ipAddress: String, private val serverPortNumber: Int) :
             clientSocket = Socket(serverAddress, serverPortNumber)
             try {
                 outputWriter = PrintWriter(BufferedWriter(OutputStreamWriter(clientSocket?.getOutputStream())), true)
-                inputReader = BufferedReader(InputStreamReader(clientSocket?.getInputStream()))
+                inputReader = clientSocket?.getInputStream()
                 Timber.d("Connected to the server at %s", ipAddress)
                 sendInfo("Connected to the server at $ipAddress")
                 while (isRunning) {
                     inputReader?.let {
-                        val inputMessage = it.readLine()
+                        var bytes = it.read(readBuffer)
+                        val inputMessage = String(readBuffer, 0, bytes)
                         if (!inputMessage.isNullOrEmpty())
                             broadCastIncomingMessage("( @ $ipAddress ) $inputMessage")
                     }
