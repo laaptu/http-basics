@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Server Simple</string>
+    <string name="action_settings">Settings</string>
+    <string name="server">SERVER</string>
+    <string name="client">CLIENT</string>
+    <string name="enter_server_port_number">Enter Server Port Number</string>
+    <string name="enter_a_valid_server_ip_address">Enter a valid server ip address</string>
+</resources>
